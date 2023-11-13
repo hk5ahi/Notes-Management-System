@@ -18,7 +18,8 @@ This repository contains a Note Management System, where users can manage notes 
 
 An Entity-Relationship Diagram (ERD) visualizing the relationships between entities is provided below:
 
-![ERD Diagram](https://github.com/hk5ahi/CLI-Task-Management-System/assets/75085428/a55845ce-50d5-4204-8a8b-4501b73c56b8)
+![ERD NoteManagement](https://github.com/hk5ahi/Notes-Management-System/assets/75085428/7bedf838-20d9-4e8d-a061-3855083f42d1)
+
 
 ## Getting Started
 
