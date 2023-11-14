@@ -11,10 +11,12 @@ public class CustomExceptionHandler {
     public ResponseEntity<String> handleUserNotFoundException(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
     }
-
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<String> handleBadRequestException(BadRequestException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
     }
-
+    @ExceptionHandler(UnAuthorizedException.class)
+    public ResponseEntity<String> handleUnAuthorizationException(UnAuthorizedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
 }

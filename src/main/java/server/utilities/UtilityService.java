@@ -1,13 +1,10 @@
 package server.utilities;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import server.dao.UserDao;
 import server.domain.User;
 import server.dto.AuthUserDTO;
 import server.exception.NotFoundException;
 import server.exception.UnAuthorizedException;
-
 import java.util.*;
 
 @Service

@@ -10,6 +10,11 @@ import java.time.Instant;
 @Table(name = "labels")
 
 public class Label {
+
+    public Label(String title) {
+        this.title = title;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long labelId;
