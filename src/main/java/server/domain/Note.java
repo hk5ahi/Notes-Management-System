@@ -13,7 +13,8 @@ public class Note {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long noteId;
+    @Column(name = "id", nullable = false)
+    private Long id;
     @Column(name = "title", nullable = false, length = 25, columnDefinition = "TEXT", unique = true)
     private String title;
     @Column(name = "content", columnDefinition = "TEXT")

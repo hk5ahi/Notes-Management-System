@@ -6,4 +6,5 @@ public class LabelDTO {
 
     private Long labelId;
     private Long[] NoteIds;
+    private String title;
 }

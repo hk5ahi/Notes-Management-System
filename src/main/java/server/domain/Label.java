@@ -17,7 +17,7 @@ public class Label {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long labelId;
+    private Long Id;
     @Column(name = "title", nullable = false, length = 25, columnDefinition = "TEXT", unique = true)
     private String title;
     @ManyToOne

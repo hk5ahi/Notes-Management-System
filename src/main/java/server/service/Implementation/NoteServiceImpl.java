@@ -1,4 +1,5 @@
 package server.service.Implementation;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -10,10 +11,11 @@ import server.domain.User;
 import server.dto.AuthUserDTO;
 import server.dto.NoteDTO;
 import server.exception.BadRequestException;
+import server.exception.ForbiddenException;
 import server.exception.NotFoundException;
-import server.exception.UnAuthorizedException;
 import server.service.NoteService;
 import server.utilities.UtilityService;
+
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -32,7 +34,7 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @Transactional
-    public void createNote(NoteDTO note, String header) {
+    public Note createNote(NoteDTO note, String header) {
         User loggedInUser = utilityService.getUser(header);
         Note noteToSave = new Note(note.getTitle(), note.getContent(), note.isArchive(), note.isDelete());
         Instant instant = Instant.now();
@@ -40,10 +42,11 @@ public class NoteServiceImpl implements NoteService {
         noteToSave.setCreatedBy(loggedInUser);
         Optional<Note> existedNote = noteDao.findByTitleAndIsDeleteIsFalse(note.getTitle());
         if (existedNote.isPresent() && !existedNote.get().isDelete()) {
-            log.error("The note already exists with same title {}", noteToSave.getTitle());
-            throw new BadRequestException("The note can not be created");
+
+            throw new BadRequestException("Invalid Request", "The note already exists with same title" + noteToSave.getTitle());
         } else {
             noteDao.save(noteToSave);
+            return noteToSave;
         }
     }
 
@@ -60,7 +63,7 @@ public class NoteServiceImpl implements NoteService {
     private void validateIfUserCanDeleteNote(NoteDTO noteDTO, String authorizationHeader) {
         AuthUserDTO authUserDTO = utilityService.getAuthUser(authorizationHeader);
         if (noteDTO.isDelete() && !authUserDTO.getUserRole().equals(User.userRole.Admin)) {
-            throw new UnAuthorizedException("Only Admin can delete the note");
+            throw new ForbiddenException("Invalid Request", "Only Admin can delete the note");
         }
     }
 
@@ -74,99 +77,74 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @Transactional
-    public void updateNote(String authorizationHeader, NoteDTO noteDTO) {
+    public void editNote(String authorizationHeader, NoteDTO noteDTO) {
         utilityService.getUser(authorizationHeader);
-        validateIfUserCanArchiveAndDeleteNote(noteDTO);
-        updateNoteEntries(noteDTO, authorizationHeader);
+        Note prevNote = validateIfNoteExists(noteDTO.getNoteId());
+        Note newNote = new Note();
+        BeanUtils.copyProperties(prevNote, newNote);
+        Note updatedNote = copyNote(prevNote, noteDTO);
+        noteDao.save(updatedNote);
     }
 
-    private void updateNoteEntries(NoteDTO noteDTO, String authorizationHeader) {
-        if (!noteDTO.isArchive() && !noteDTO.isDelete()) {
-            editNoteData(noteDTO);
-        } else if (noteDTO.isArchive() && !noteDTO.isDelete()) {
-            archiveEachNote(noteDTO);
-        } else {
-            deleteEachNote(noteDTO, authorizationHeader);
-        }
-    }
 
-    private void archiveEachNote(NoteDTO noteDTO) {
+    @Override
+    @Transactional
+    public void archiveNote(String authorizationHeader,NoteDTO noteDTO) {
+        utilityService.getUser(authorizationHeader);
         for (Long id : noteDTO.getId()) {
             Note prevNote = validateIfNoteExists(id);
             validateIfUserCanArchiveNote(noteDTO, prevNote);
-            prevNote.setArchive(noteDTO.isArchive());
+            prevNote.setArchive(true);
             noteDao.save(prevNote);
         }
     }
-
-    private void deleteEachNote(NoteDTO noteDTO, String authorizationHeader) {
+    @Override
+    @Transactional
+    public void deleteNote(String authorizationHeader,NoteDTO noteDTO ) {
 
         for (Long id : noteDTO.getId()) {
             Note prevNote = validateIfNoteExists(id);
             validateIfUserCanDeleteNote(noteDTO, authorizationHeader);
-            prevNote.setDelete(noteDTO.isDelete());
+            prevNote.setDelete(true);
             noteDao.save(prevNote);
         }
     }
 
-    private void editNoteData(NoteDTO noteDTO) {
-        Long id = validateAndGetNoteId(noteDTO);
-        Note prevNote = validateIfNoteExists(id);
-        Note newNote = new Note();
-        BeanUtils.copyProperties(prevNote, newNote);
-        Note updatedNote = copyNote(prevNote, noteDTO);
-        updatedNote.setArchive(noteDTO.isArchive() ? noteDTO.isArchive() : prevNote.isArchive());
-        updatedNote.setDelete(noteDTO.isDelete() ? noteDTO.isDelete() : prevNote.isDelete());
-        noteDao.save(updatedNote);
-    }
-
-    private Long validateAndGetNoteId(NoteDTO noteDTO) {
-        if (noteDTO.getId() == null || noteDTO.getId().length != 1) {
-            throw new BadRequestException("Invalid input: id should be an array with exactly one value");
-        }
-        Long[] noteId = noteDTO.getId();
-        return noteId[0];
-    }
-
     private Note validateIfNoteExists(Long id) {
         Note prevNote = noteDao
-                .findByNoteId(id)
-                .orElseThrow(NotFoundException::new);
+                .findById(id)
+                .orElseThrow(() -> new NotFoundException("Invalid Request", "Note not found"));
+
         if (prevNote.isDelete()) {
-            throw new NotFoundException("Note not found or is deleted");
+            throw new NotFoundException("Note is deleted", "Note not found or is deleted");
         }
         return prevNote;
     }
 
-    private void validateIfUserCanArchiveAndDeleteNote(NoteDTO noteDTO) {
-        if (noteDTO.isArchive() && noteDTO.isDelete()) {
-            throw new BadRequestException("Note can not be archived and deleted at the same time");
-        }
-    }
 
     @Override
-    public List<NoteDTO> getNotes(boolean status, String Date, boolean isAllNotes, String header) {
+    public List<Note> getNotes(boolean status, String Date, boolean isAllNotes, String header) {
         utilityService.getUser(header);
         return filterNotes(status, Date, isAllNotes);
     }
 
-    private List<NoteDTO> filterNotes(boolean status, String date, boolean isAllNotes) {
+    private List<Note> filterNotes(boolean status, String date, boolean isAllNotes) {
         if (isAllNotes && !status && date.equals("null")) {
-            List<Note> notes = noteDao.findAllByIsDeleteIsFalse();
-            return convertToNoteDTO(notes);
+            return noteDao.findAllByIsDeleteIsFalse();
+
         }
         if (!status && date.equals("null")) {
-            List<Note> notes = noteDao.findAllByIsArchiveIsFalseAndIsDeleteIsFalse();
-            return convertToNoteDTO(notes);
+            return noteDao.findAllByIsArchiveIsFalseAndIsDeleteIsFalse();
+
         } else if (status && date.equals("null")) {
-            List<Note> notes = noteDao.findAllByIsArchiveIsTrueAndIsDeleteIsFalse();
-            return convertToNoteDTO(notes);
+            return noteDao.findAllByIsArchiveIsTrueAndIsDeleteIsFalse();
+
         } else if (!status && !date.equals("null")) {
             List<Note> notes = noteDao.findAllByIsDeleteIsFalse();
-            return convertToNoteDTO(filterNotesByDate(notes, date));
+            return filterNotesByDate(notes, date);
         } else {
             List<Note> notes = noteDao.findAllByIsArchiveIsTrueAndIsDeleteIsFalse();
-            return convertToNoteDTO(filterNotesByDate(notes, date));
+            return filterNotesByDate(notes, date);
         }
     }
 
@@ -185,21 +163,6 @@ public class NoteServiceImpl implements NoteService {
             }
         }
         return dateNotes;
-    }
-
-    private List<NoteDTO> convertToNoteDTO(List<Note> notes) {
-        List<NoteDTO> noteDTOS = new ArrayList<>();
-        for (Note note : notes) {
-            NoteDTO noteDTO = new NoteDTO();
-            noteDTO.setNoteId(note.getNoteId());
-            noteDTO.setTitle(note.getTitle());
-            noteDTO.setContent(note.getContent());
-            noteDTO.setCreatedAt(note.getCreatedAt());
-            noteDTO.setCreatedBy(note.getCreatedBy().getUsername());
-            noteDTO.setLabels(note.getLabels());
-            noteDTOS.add(noteDTO);
-        }
-        return noteDTOS;
     }
 
 }

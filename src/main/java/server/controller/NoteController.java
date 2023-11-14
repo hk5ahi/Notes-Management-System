@@ -1,9 +1,12 @@
 package server.controller;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import server.domain.Note;
 import server.dto.NoteDTO;
 import server.service.NoteService;
+
 import java.util.List;
 
 @RestController
@@ -17,32 +20,46 @@ public class NoteController {
     }
 
     @PostMapping()
-    public ResponseEntity<String> createNote(@RequestBody NoteDTO noteDTO, @RequestHeader("Authorization") String authorizationHeader) {
-        noteService.createNote(noteDTO, authorizationHeader);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<Note> createNote(@RequestBody NoteDTO noteDTO, @RequestHeader("Authorization") String authorizationHeader) {
+        Note note = noteService.createNote(noteDTO, authorizationHeader);
+        return ResponseEntity.status(HttpStatus.CREATED).body(note);
     }
 
     @GetMapping()
-    public ResponseEntity<List<NoteDTO>> getNotes(
+    public ResponseEntity<List<Note>> getNotes(
             @RequestParam(name = "isArchive", required = false, defaultValue = "false") boolean status,
             @RequestParam(name = "Date", required = false, defaultValue = "null") String Date,
             @RequestParam(value = "isAllNotes", defaultValue = "false") boolean isAllNotes,
             @RequestHeader("Authorization") String authorizationHeader
     ) {
-        List<NoteDTO> notes = noteService.getNotes(status, Date, isAllNotes, authorizationHeader);
+        List<Note> notes = noteService.getNotes(status, Date, isAllNotes, authorizationHeader);
         return ResponseEntity.ok(notes);
     }
 
-    @PutMapping()
-    public ResponseEntity<String> update(
+    @PutMapping("/edit")
+    public ResponseEntity<String> edit(
             @RequestHeader("Authorization") String authorizationHeader,
-            @RequestBody NoteDTO noteDTO,
-            @RequestParam(value = "isArchive", defaultValue = "false") boolean isArchive,
-            @RequestParam(value = "isDelete", defaultValue = "false") boolean isDelete
+            @RequestBody NoteDTO noteDTO
     ) {
-        noteDTO.setArchive(isArchive);
-        noteDTO.setDelete(isDelete);
-        noteService.updateNote(authorizationHeader, noteDTO);
+        noteService.editNote(authorizationHeader, noteDTO);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PutMapping("/delete")
+    public ResponseEntity<String> delete(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody NoteDTO noteDTO
+    ) {
+        noteService.deleteNote(authorizationHeader, noteDTO);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
+    @PutMapping("/archive")
+    public ResponseEntity<String> archive(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestBody NoteDTO noteDTO
+    ) {
+        noteService.archiveNote(authorizationHeader, noteDTO);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 }

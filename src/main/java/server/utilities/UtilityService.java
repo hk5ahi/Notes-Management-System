@@ -21,7 +21,7 @@ public class UtilityService {
         Map<String, String> credentials = extractCredentials(authorizationHeader);
         return Optional.of(credentials)
                 .flatMap(cred -> userDao.getUserByUsernameAndPassword(cred.get("username"), cred.get("password")))
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new NotFoundException("Invalid Request","User not found"));
     }
 
     private Map<String, String> extractCredentials(String authorizationHeader) {
@@ -46,11 +46,11 @@ public class UtilityService {
         if (!(credentials.isEmpty())) {
             User authenticatedUser = userDao
                     .getUserByUsernameAndPassword(credentials.get("username"), credentials.get("password"))
-                    .orElseThrow(() -> new UnAuthorizedException("username/password not matched"));
+                    .orElseThrow(() -> new UnAuthorizedException("Invalid Request","username/password not matched"));
 
             return new AuthUserDTO(authenticatedUser.getUserRole(), authenticatedUser.getUsername());
         } else {
-            throw new UnAuthorizedException("Auth Header is missing");
+            throw new UnAuthorizedException("Invalid Request","Auth Header is missing");
         }
     }
 

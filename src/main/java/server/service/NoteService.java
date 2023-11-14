@@ -1,9 +1,12 @@
 package server.service;
+import server.domain.Note;
 import server.dto.NoteDTO;
 import java.util.List;
 
 public interface NoteService {
-    void createNote(NoteDTO note, String header);
-    void updateNote(String authorizationHeader, NoteDTO noteDTO);
-    List<NoteDTO> getNotes(boolean status, String Date,boolean isAllNotes, String header);
+    Note createNote(NoteDTO note, String header);
+    void editNote(String authorizationHeader, NoteDTO noteDTO);
+    void archiveNote(String authorizationHeader, NoteDTO noteDTO);
+    void deleteNote(String authorizationHeader, NoteDTO noteDTO);
+    List<Note> getNotes(boolean status, String Date,boolean isAllNotes, String header);
 }

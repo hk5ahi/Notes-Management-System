@@ -2,6 +2,7 @@ package server.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import server.domain.Label;
 import server.dto.LabelDTO;
 import server.service.LabelService;
 
@@ -16,9 +17,9 @@ public class LabelController {
     }
 
     @PostMapping()
-    public ResponseEntity<String> createLabel(@RequestBody String title, @RequestHeader("Authorization") String authorizationHeader) {
-        labelService.createLabel(title, authorizationHeader);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<Label> createLabel(@RequestBody LabelDTO labelDTO, @RequestHeader("Authorization") String authorizationHeader) {
+        Label label=labelService.createLabel(labelDTO.getTitle(), authorizationHeader);
+        return ResponseEntity.status(HttpStatus.CREATED).body(label);
     }
 
     @PatchMapping()

@@ -22,19 +22,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void initializeUsers() {
+    public void initializeUsers(List<User> usersList) {
 
-        List<User> usersList = Arrays.asList(
-                new User("Muhammad Rizwan", "m.rizwan", "Ts12", User.userRole.Admin),
-                new User("Muhammad Hanan", "m.hanan", "Ts12", User.userRole.User)
-        );
+
         for (User user : usersList) {
             if (!userDao.existsByUsername(user.getUsername())) {
-
                 userDao.save(user);
             } else {
-                log.error("The user {} already exists.", user.getUsername());
-                throw new BadRequestException("The user is not able to initialize");
+                throw new BadRequestException("Invalid Request","The user already exists with username :"+ user.getUsername());
             }
         }
     }
