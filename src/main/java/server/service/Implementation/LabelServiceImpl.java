@@ -1,5 +1,4 @@
 package server.service.Implementation;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,7 +12,6 @@ import server.exception.BadRequestException;
 import server.exception.NotFoundException;
 import server.service.LabelService;
 import server.utilities.UtilityService;
-
 import java.time.Instant;
 
 @Service

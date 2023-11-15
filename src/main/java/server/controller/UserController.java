@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import server.domain.User;
 import server.service.UserService;
-
 import java.util.List;
 
 @RestController
@@ -27,6 +26,5 @@ public class UserController {
         userService.initializeUsers(users);
         return ResponseEntity.status(HttpStatus.CREATED).body(users);
     }
-
 
 }

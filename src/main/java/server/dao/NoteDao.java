@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface NoteDao extends JpaRepository<Note, String> {
-    Optional<Note> findById(Long id);
     Optional<Note> findByIdAndIsDeleteIsFalse(Long id);
     Optional<Note> findByTitleAndIsDeleteIsFalse(String title);
     List<Note> findAllByIsArchiveIsTrueAndIsDeleteIsFalse();

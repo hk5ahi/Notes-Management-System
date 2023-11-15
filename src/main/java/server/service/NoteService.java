@@ -8,5 +8,5 @@ public interface NoteService {
     void editNote(String authorizationHeader, NoteDTO noteDTO);
     void archiveNote(String authorizationHeader, NoteDTO noteDTO);
     void deleteNote(String authorizationHeader, NoteDTO noteDTO);
-    List<Note> getNotes(boolean status, String Date,boolean isAllNotes, String header);
+    List<Note> getNotes(boolean status, String Date, String header);
 }

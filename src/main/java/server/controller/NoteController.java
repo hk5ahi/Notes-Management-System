@@ -1,12 +1,10 @@
 package server.controller;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import server.domain.Note;
 import server.dto.NoteDTO;
 import server.service.NoteService;
-
 import java.util.List;
 
 @RestController
@@ -29,10 +27,9 @@ public class NoteController {
     public ResponseEntity<List<Note>> getNotes(
             @RequestParam(name = "isArchive", required = false, defaultValue = "false") boolean status,
             @RequestParam(name = "Date", required = false, defaultValue = "null") String Date,
-            @RequestParam(value = "isAllNotes", defaultValue = "false") boolean isAllNotes,
             @RequestHeader("Authorization") String authorizationHeader
     ) {
-        List<Note> notes = noteService.getNotes(status, Date, isAllNotes, authorizationHeader);
+        List<Note> notes = noteService.getNotes(status,Date,authorizationHeader);
         return ResponseEntity.ok(notes);
     }
 
