@@ -15,17 +15,17 @@ public class NoteDTO {
         this.createdAt = null;
         this.createdBy = null;
         this.id = null;
-        this.noteId=null;
+        this.ids=null;
     }
 
-    private Long[] id;
-    private Long noteId;
+    private Long[] ids;
+    private Long id;
     private String title;
     private String content;
     private boolean isArchive;
     private boolean isDelete;
     private Instant createdAt;
-    private String createdBy;
+    private UserDTO createdBy;
     private List<Label> labels;
 
 }

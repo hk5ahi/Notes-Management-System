@@ -1,4 +1,6 @@
 package server.service.Implementation;
+
+import org.aspectj.weaver.ast.Not;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -8,16 +10,20 @@ import server.domain.Note;
 import server.domain.User;
 import server.dto.AuthUserDTO;
 import server.dto.NoteDTO;
+import server.dto.UserDTO;
 import server.exception.BadRequestException;
 import server.exception.ForbiddenException;
 import server.exception.InvalidDateFormatException;
 import server.exception.NotFoundException;
 import server.service.NoteService;
 import server.utilities.UtilityService;
+
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+
+import static java.lang.Boolean.parseBoolean;
 
 @Service
 public class NoteServiceImpl implements NoteService {
@@ -33,7 +39,7 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @Transactional
-    public Note createNote(NoteDTO note, String header) {
+    public NoteDTO createNote(NoteDTO note, String header) {
         User loggedInUser = utilityService.getUser(header);
         Note noteToSave = new Note(note.getTitle(), note.getContent(), note.isArchive(), note.isDelete());
         Instant instant = Instant.now();
@@ -44,7 +50,8 @@ public class NoteServiceImpl implements NoteService {
             throw new BadRequestException("Invalid Request", "The note already exists with same title " + noteToSave.getTitle());
         } else {
             noteDao.save(noteToSave);
-            return noteToSave;
+            return convertNoteToNoteDTO(noteToSave);
+
         }
     }
 
@@ -63,19 +70,20 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @Transactional
-    public void editNote(String authorizationHeader, NoteDTO noteDTO) {
+    public NoteDTO editNote(String authorizationHeader, NoteDTO noteDTO) {
         utilityService.getUser(authorizationHeader);
-        Note prevNote = validateIfNoteExists(noteDTO.getNoteId());
+        Note prevNote = validateIfNoteExists(noteDTO.getId());
         prevNote.setTitle(noteDTO.getTitle());
         prevNote.setContent(noteDTO.getContent());
         noteDao.save(prevNote);
+        return convertNoteToNoteDTO(prevNote);
     }
 
     @Override
     @Transactional
     public void archiveNote(String authorizationHeader, NoteDTO noteDTO) {
         utilityService.getUser(authorizationHeader);
-        for (Long id : noteDTO.getId()) {
+        for (Long id : noteDTO.getIds()) {
             Note prevNote = validateIfNoteExists(id);
             validateIfUserCanArchiveNote(prevNote);
             prevNote.setArchive(true);
@@ -86,7 +94,7 @@ public class NoteServiceImpl implements NoteService {
     @Override
     @Transactional
     public void deleteNote(String authorizationHeader, NoteDTO noteDTO) {
-        for (Long id : noteDTO.getId()) {
+        for (Long id : noteDTO.getIds()) {
             Note prevNote = validateIfNoteExists(id);
             validateIfUserCanDeleteNote(authorizationHeader);
             prevNote.setDelete(true);
@@ -100,23 +108,64 @@ public class NoteServiceImpl implements NoteService {
                 .orElseThrow(() -> new NotFoundException("Invalid Request", "Note not found or is deleted"));
     }
 
-    @Override
-    public List<Note> getNotes(boolean status, String Date, String header) {
-        utilityService.getUser(header);
-        return filterNotes(status, Date);
+    private boolean validateIfStatusIsBoolean(String status) {
+        boolean isArchive;
+        try {
+            return isArchive = checkIfBoolean(status);
+        } catch (IllegalArgumentException e) {
+            throw new InvalidDateFormatException(e.getMessage(), "Invalid value for 'isArchive'. Please provide a valid boolean value.");
+        }
     }
 
-    private List<Note> filterNotes(boolean status, String date) {
+    private boolean checkIfBoolean(String value) {
+        if (value != null) {
+            if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("1")) {
+                return true;
+            } else if (value.equalsIgnoreCase("false") || value.equalsIgnoreCase("0")) {
+                return false;
+            } else {
+                throw new InvalidDateFormatException("Invalid Status", "Invalid value for 'isArchive'. Please provide a valid boolean value.");
+            }
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public List<NoteDTO> getNotes(String status, String Date, String header) {
+        utilityService.getUser(header);
+        if (!status.equals("")) {
+            boolean isArchive = validateIfStatusIsBoolean(status);
+            return filterNotes(isArchive, Date);
+        } else {
+            if (Date.equals("null")) {
+                return sendNotesToNotesDTO(noteDao.findAllByIsDeleteIsFalse());
+            } else {
+                List<Note> notes = noteDao.findAllByIsDeleteIsFalse();
+                return sendNotesToNotesDTO(filterNotesByDate(notes, Date));
+            }
+        }
+    }
+
+    private List<NoteDTO> sendNotesToNotesDTO(List<Note> notes) {
+        List<NoteDTO> noteDTOs = new ArrayList<>();
+        for (Note note : notes) {
+            noteDTOs.add(convertNoteToNoteDTO(note));
+        }
+        return noteDTOs;
+    }
+
+    private List<NoteDTO> filterNotes(boolean status, String date) {
         if (!status && date.equals("null")) {
-            return noteDao.findAllByIsDeleteIsFalse();
+            return sendNotesToNotesDTO(noteDao.findAllByIsArchiveIsFalseAndIsDeleteIsFalse());
         } else if (status && date.equals("null")) {
-            return noteDao.findAllByIsArchiveIsTrueAndIsDeleteIsFalse();
+            return sendNotesToNotesDTO(noteDao.findAllByIsArchiveIsTrueAndIsDeleteIsFalse());
         } else if (!status && !date.equals("null")) {
-            List<Note> notes = noteDao.findAllByIsDeleteIsFalse();
-            return filterNotesByDate(notes, date);
+            List<Note> notes = noteDao.findAllByIsArchiveIsFalseAndIsDeleteIsFalse();
+            return sendNotesToNotesDTO(filterNotesByDate(notes, date));
         } else {
             List<Note> notes = noteDao.findAllByIsArchiveIsTrueAndIsDeleteIsFalse();
-            return filterNotesByDate(notes, date);
+            return sendNotesToNotesDTO(filterNotesByDate(notes, date));
         }
     }
 
@@ -129,7 +178,6 @@ public class NoteServiceImpl implements NoteService {
                 Instant createdAt = note.getCreatedAt();
                 ZonedDateTime zonedDateTime = createdAt.atZone(ZoneId.of("UTC"));
                 LocalDate noteLocalDate = zonedDateTime.toLocalDate();
-
                 if (localDate.equals(noteLocalDate)) {
                     dateNotes.add(note);
                 }
@@ -138,5 +186,20 @@ public class NoteServiceImpl implements NoteService {
         } catch (DateTimeParseException e) {
             throw new InvalidDateFormatException(e.getMessage(), "Invalid date format. Please use the pattern dd-MM-yyyy.");
         }
+    }
+
+    private NoteDTO convertNoteToNoteDTO(Note note) {
+        NoteDTO noteDTO = new NoteDTO();
+        noteDTO.setId(note.getId());
+        noteDTO.setTitle(note.getTitle());
+        noteDTO.setContent(note.getContent());
+        noteDTO.setArchive(note.isArchive());
+        noteDTO.setDelete(note.isDelete());
+        noteDTO.setCreatedAt(note.getCreatedAt());
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(note.getCreatedBy().getId());
+        noteDTO.setCreatedBy(userDTO);
+        noteDTO.setLabels(note.getLabels());
+        return noteDTO;
     }
 }

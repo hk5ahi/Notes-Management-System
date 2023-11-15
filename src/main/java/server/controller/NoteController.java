@@ -18,28 +18,28 @@ public class NoteController {
     }
 
     @PostMapping()
-    public ResponseEntity<Note> createNote(@RequestBody NoteDTO noteDTO, @RequestHeader("Authorization") String authorizationHeader) {
-        Note note = noteService.createNote(noteDTO, authorizationHeader);
+    public ResponseEntity<NoteDTO> createNote(@RequestBody NoteDTO noteDTO, @RequestHeader("Authorization") String authorizationHeader) {
+        NoteDTO note = noteService.createNote(noteDTO, authorizationHeader);
         return ResponseEntity.status(HttpStatus.CREATED).body(note);
     }
 
     @GetMapping()
-    public ResponseEntity<List<Note>> getNotes(
-            @RequestParam(name = "isArchive", required = false, defaultValue = "false") boolean status,
+    public ResponseEntity<List<NoteDTO>> getNotes(
+            @RequestParam(name = "isArchive", required = false) String status,
             @RequestParam(name = "Date", required = false, defaultValue = "null") String Date,
             @RequestHeader("Authorization") String authorizationHeader
     ) {
-        List<Note> notes = noteService.getNotes(status,Date,authorizationHeader);
+        List<NoteDTO> notes = noteService.getNotes(status,Date,authorizationHeader);
         return ResponseEntity.ok(notes);
     }
 
     @PutMapping("/edit")
-    public ResponseEntity<String> edit(
+    public ResponseEntity<NoteDTO> edit(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody NoteDTO noteDTO
     ) {
-        noteService.editNote(authorizationHeader, noteDTO);
-        return ResponseEntity.status(HttpStatus.OK).build();
+        NoteDTO note=noteService.editNote(authorizationHeader, noteDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(note);
     }
 
     @PutMapping("/delete")
