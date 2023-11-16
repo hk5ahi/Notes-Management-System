@@ -2,7 +2,6 @@ package server.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import server.domain.Note;
 import server.dto.NoteDTO;
 import server.service.NoteService;
 import java.util.List;
@@ -19,6 +18,7 @@ public class NoteController {
 
     @PostMapping()
     public ResponseEntity<NoteDTO> createNote(@RequestBody NoteDTO noteDTO, @RequestHeader("Authorization") String authorizationHeader) {
+        noteService.validateIfNoteIsNotNull(noteDTO);
         NoteDTO note = noteService.createNote(noteDTO, authorizationHeader);
         return ResponseEntity.status(HttpStatus.CREATED).body(note);
     }
@@ -29,7 +29,7 @@ public class NoteController {
             @RequestParam(name = "Date", required = false, defaultValue = "null") String Date,
             @RequestHeader("Authorization") String authorizationHeader
     ) {
-        List<NoteDTO> notes = noteService.getNotes(status,Date,authorizationHeader);
+        List<NoteDTO> notes = noteService.getNotes(status, Date, authorizationHeader);
         return ResponseEntity.ok(notes);
     }
 
@@ -38,7 +38,7 @@ public class NoteController {
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestBody NoteDTO noteDTO
     ) {
-        NoteDTO note=noteService.editNote(authorizationHeader, noteDTO);
+        NoteDTO note = noteService.editNote(authorizationHeader, noteDTO);
         return ResponseEntity.status(HttpStatus.OK).body(note);
     }
 

@@ -1,10 +1,16 @@
 package server.utilities;
 import org.springframework.stereotype.Service;
 import server.dao.UserDao;
+import server.domain.Label;
 import server.domain.User;
 import server.dto.AuthUserDTO;
+import server.dto.LabelDTO;
+import server.dto.UserDTO;
 import server.exception.NotFoundException;
 import server.exception.UnAuthorizedException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
@@ -32,7 +38,6 @@ public class UtilityService {
             String[] usernameAndPassword = credentials.split(":");
             String username = usernameAndPassword[0];
             String password = usernameAndPassword[1];
-
             Map<String, String> credential = new HashMap<>();
             credential.put("username", username);
             credential.put("password", password);
@@ -53,5 +58,25 @@ public class UtilityService {
             throw new UnAuthorizedException("Invalid Request","Auth Header is missing");
         }
     }
-
+    public boolean isNumeric(String inputString) {
+        try {
+            Double.parseDouble(inputString);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    public LabelDTO convertLabelToLabelDTO(Label label) {
+        LabelDTO labelDTO = new LabelDTO();
+        labelDTO.setId(label.getId());
+        labelDTO.setTitle(label.getTitle());
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(label.getCreatedAt(), ZoneId.of("UTC+5"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy, hh:mm:ssa ");
+        String formattedTimestamp = localDateTime.format(formatter);
+        labelDTO.setCreatedAt(formattedTimestamp);
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(label.getCreatedBy().getId());
+        labelDTO.setCreatedBy(userDTO);
+        return labelDTO;
+    }
 }

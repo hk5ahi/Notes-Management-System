@@ -1,7 +1,7 @@
 package server.exception;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -35,7 +35,19 @@ public class CustomExceptionHandler {
 
     @ExceptionHandler(InvalidDateFormatException.class)
     @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
-    public ResponseEntity<String> handleInvalidInputException(InvalidDateFormatException ex) {
+    public ResponseEntity<String> handleInvalidDateException(InvalidDateFormatException ex) {
         return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(ex.getResponseMessage());
     }
+
+    @ExceptionHandler(InvalidInputException.class)
+    @ResponseStatus(HttpStatus.NOT_ACCEPTABLE)
+    public ResponseEntity<String> handleInvalidInputException(InvalidInputException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(ex.getResponseMessage());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<String> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid input :" + e.getMessage());
+    }
 }
+

@@ -1,7 +1,5 @@
 package server.dto;
 import lombok.Data;
-import server.domain.Label;
-import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -15,7 +13,7 @@ public class NoteDTO {
         this.createdAt = null;
         this.createdBy = null;
         this.id = null;
-        this.ids=null;
+        this.ids = null;
     }
 
     private Long[] ids;
@@ -24,8 +22,7 @@ public class NoteDTO {
     private String content;
     private boolean isArchive;
     private boolean isDelete;
-    private Instant createdAt;
+    private String createdAt;
     private UserDTO createdBy;
-    private List<Label> labels;
-
+    private List<LabelDTO> labels;
 }

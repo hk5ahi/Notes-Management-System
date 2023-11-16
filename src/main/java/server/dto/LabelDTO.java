@@ -4,7 +4,9 @@ import lombok.Data;
 @Data
 public class LabelDTO {
 
-    private Long labelId;
-    private Long[] NoteIds;
+    private Long id;
+    private Long[] ids;
     private String title;
+    private UserDTO createdBy;
+    private String createdAt;
 }

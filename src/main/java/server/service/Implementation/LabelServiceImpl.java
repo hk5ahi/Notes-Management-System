@@ -9,10 +9,12 @@ import server.domain.Note;
 import server.domain.User;
 import server.dto.LabelDTO;
 import server.exception.BadRequestException;
+import server.exception.InvalidDateFormatException;
 import server.exception.NotFoundException;
 import server.service.LabelService;
 import server.utilities.UtilityService;
 import java.time.Instant;
+
 
 @Service
 public class LabelServiceImpl implements LabelService {
@@ -30,7 +32,7 @@ public class LabelServiceImpl implements LabelService {
     }
 
     @Override
-    public Label createLabel(String title, String header) {
+    public LabelDTO createLabel(String title, String header) {
         User loggedInUser = utilityService.getUser(header);
         if (labelDao.findByTitle(title).isPresent()) {
             throw new BadRequestException("Invalid Request", "Label already exists");
@@ -40,15 +42,16 @@ public class LabelServiceImpl implements LabelService {
             Instant instant = Instant.now();
             labelToSave.setCreatedAt(instant);
             labelDao.save(labelToSave);
-            return labelToSave;
+            return utilityService.convertLabelToLabelDTO(labelToSave);
         }
     }
+
 
     @Override
     public void assignLabels(LabelDTO labelDTO, String header) {
         utilityService.getUser(header);
-        Label label = labelDao.findById(labelDTO.getLabelId().toString()).orElseThrow(() -> new NotFoundException("Invalid Request", "Label not found"));
-        for (Long id : labelDTO.getNoteIds()) {
+        Label label = labelDao.findById(labelDTO.getId().toString()).orElseThrow(() -> new NotFoundException("Invalid Request", "Label not found"));
+        for (Long id : labelDTO.getIds()) {
             Note note = noteDao.findByIdAndIsDeleteIsFalse(id).orElseThrow(() -> new NotFoundException("Invalid Request", "Note not found"));
             if (note.getLabels().contains(label)) {
                 log.error("Label is already assigned to the note");
@@ -56,6 +59,13 @@ public class LabelServiceImpl implements LabelService {
                 note.getLabels().add(label);
                 noteDao.save(note);
             }
+        }
+    }
+
+    @Override
+    public void validateIfLabelIsNotNull(LabelDTO labelDTO) {
+        if (labelDTO.getTitle() == null) {
+            throw new InvalidDateFormatException("Invalid Request", "Title cannot be null or incorrect format");
         }
     }
 }

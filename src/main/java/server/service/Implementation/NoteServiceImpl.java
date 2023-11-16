@@ -1,14 +1,14 @@
 package server.service.Implementation;
-
-import org.aspectj.weaver.ast.Not;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import server.dao.NoteDao;
+import server.domain.Label;
 import server.domain.Note;
 import server.domain.User;
 import server.dto.AuthUserDTO;
+import server.dto.LabelDTO;
 import server.dto.NoteDTO;
 import server.dto.UserDTO;
 import server.exception.BadRequestException;
@@ -17,13 +17,11 @@ import server.exception.InvalidDateFormatException;
 import server.exception.NotFoundException;
 import server.service.NoteService;
 import server.utilities.UtilityService;
-
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 
-import static java.lang.Boolean.parseBoolean;
 
 @Service
 public class NoteServiceImpl implements NoteService {
@@ -51,7 +49,6 @@ public class NoteServiceImpl implements NoteService {
         } else {
             noteDao.save(noteToSave);
             return convertNoteToNoteDTO(noteToSave);
-
         }
     }
 
@@ -109,9 +106,8 @@ public class NoteServiceImpl implements NoteService {
     }
 
     private boolean validateIfStatusIsBoolean(String status) {
-        boolean isArchive;
         try {
-            return isArchive = checkIfBoolean(status);
+            return checkIfBoolean(status);
         } catch (IllegalArgumentException e) {
             throw new InvalidDateFormatException(e.getMessage(), "Invalid value for 'isArchive'. Please provide a valid boolean value.");
         }
@@ -144,6 +140,15 @@ public class NoteServiceImpl implements NoteService {
                 List<Note> notes = noteDao.findAllByIsDeleteIsFalse();
                 return sendNotesToNotesDTO(filterNotesByDate(notes, Date));
             }
+        }
+    }
+
+    @Override
+    public void validateIfNoteIsNotNull(NoteDTO noteDTO) {
+        if (noteDTO.getTitle() == null) {
+            throw new InvalidDateFormatException("Invalid Request", "Title cannot be null or incorrect format");
+        } else if (noteDTO.getContent() == null) {
+            throw new InvalidDateFormatException("Invalid Request", "Content cannot be null or incorrect format");
         }
     }
 
@@ -195,11 +200,22 @@ public class NoteServiceImpl implements NoteService {
         noteDTO.setContent(note.getContent());
         noteDTO.setArchive(note.isArchive());
         noteDTO.setDelete(note.isDelete());
-        noteDTO.setCreatedAt(note.getCreatedAt());
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(note.getCreatedAt(), ZoneId.of("UTC+5"));
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy, hh:mm:ssa");
+        String formattedTimestamp = localDateTime.format(formatter);
+        noteDTO.setCreatedAt(formattedTimestamp);
         UserDTO userDTO = new UserDTO();
         userDTO.setId(note.getCreatedBy().getId());
         noteDTO.setCreatedBy(userDTO);
-        noteDTO.setLabels(note.getLabels());
+        if (note.getLabels() != null) {
+            List<LabelDTO> labelDTOs = new ArrayList<>();
+            for (Label label : note.getLabels()) {
+                labelDTOs.add(utilityService.convertLabelToLabelDTO(label));
+            }
+            noteDTO.setLabels(labelDTOs);
+        } else {
+            noteDTO.setLabels(null);
+        }
         return noteDTO;
     }
 }
